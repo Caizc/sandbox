@@ -1,96 +1,109 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class BearAnim : MonoBehaviour {
-
-    protected Animator Red_animator;
-    protected Animator Blue_animator;
-   
+/// <summary>
+/// 小熊动画控制
+/// </summary>
+public class BearAnim : MonoBehaviour
+{
     public GameObject RedBear;
     public GameObject BlueBear;
 
-    private float dirDemp = 0.25f;//方向阻尼
-    private float speedDemp = 0.5f;//速度阻尼
+    private Animator _redAnimator;
+    private Animator _blueAnimator;
+
+    // 方向阻尼
+    private float _directionDamp = 0.25f;
+
+    // 速度阻尼
+    private float _speedDamp = 0.5f;
 
     private AnimatorStateInfo stateinfo;
 
-	// Use this for initialization
-	void Start () {
+    void Start()
+    {
         //Vector3 redPOS = RedBear.transform.position;
         //Vector3 bluePOS = BlueBear.transform.position;
+
         GameData.RedX = -1;
         GameData.RedY = 0.1f;
         GameData.RedZ = 0;
         GameData.BlueX = 1;
         GameData.BlueY = -0.1f;
         GameData.BlueZ = 0;
-        GameData.getRedX = -1;
-        GameData.getRedY = 0.1f;
-        GameData.getRedZ = 0;
-        GameData.getBlueX = 1;
-        GameData.getBlueY = 0.1f;
-        GameData.getBlueZ = 0;
-        Red_animator = RedBear.GetComponent<Animator>();//获取动画控制器
-        Blue_animator = BlueBear.GetComponent<Animator>();//获取动画控制器
-         
-	}
-	
-	// Update is called once per frame
+        GameData.GetRedX = -1;
+        GameData.GetRedY = 0.1f;
+        GameData.GetRedZ = 0;
+        GameData.GetBlueX = 1;
+        GameData.GetBlueY = 0.1f;
+        GameData.GetBlueZ = 0;
+
+        _redAnimator = RedBear.GetComponent<Animator>();
+        _blueAnimator = BlueBear.GetComponent<Animator>();
+    }
+
     void FixedUpdate()
     {
-        Animator r = RedBear.GetComponent<Animator>();
-        Animator b = BlueBear.GetComponent<Animator>();
+        // TODO: 这里可以优化为，等服务端分配该客户端控制哪一个单位后，再执行 applyRootMotion 设置，而不是每次 FixedUpdate 中执行一次
+
+        #region 待优化
+
+        Animator redBearAnim = RedBear.GetComponent<Animator>();
+        Animator blueBearAnim = BlueBear.GetComponent<Animator>();
+
         if (GameData.RedOrBlue == 0)
         {
-            r.applyRootMotion = true;
-            b.applyRootMotion = false;
+            redBearAnim.applyRootMotion = true;
+            blueBearAnim.applyRootMotion = false;
         }
         else if (GameData.RedOrBlue == 1)
         {
-            r.applyRootMotion = false;
-            b.applyRootMotion = true;
+            redBearAnim.applyRootMotion = false;
+            blueBearAnim.applyRootMotion = true;
         }
 
+        #endregion
 
-        AnimatorStateInfo Red_stateinfo = Red_animator.GetCurrentAnimatorStateInfo(0);//获取当前动画信息
-        AnimatorStateInfo Blue_stateinfo = Blue_animator.GetCurrentAnimatorStateInfo(0);//获取当前动画信息
+        // 获取当前动画信息
+        AnimatorStateInfo redStateinfo = _redAnimator.GetCurrentAnimatorStateInfo(0);
+        AnimatorStateInfo blueStateinfo = _blueAnimator.GetCurrentAnimatorStateInfo(0);
 
-        Red_animator.SetFloat("Direction", GameData.getRedDir, dirDemp, Time.deltaTime);//红熊方向
-        Red_animator.SetFloat("Speed", GameData.getRedSpeed);
-        Blue_animator.SetFloat("Direction", GameData.getBlueDir, dirDemp, Time.deltaTime);//蓝熊方向
-        Blue_animator.SetFloat("Speed", GameData.getBlueSpeed);
+        _redAnimator.SetFloat("Direction", GameData.GetRedDir, _directionDamp, Time.deltaTime); // 设置红熊方向
+        _redAnimator.SetFloat("Speed", GameData.GetRedSpeed);
+        _blueAnimator.SetFloat("Direction", GameData.GetBlueDir, _directionDamp, Time.deltaTime); // 设置蓝熊方向
+        _blueAnimator.SetFloat("Speed", GameData.GetBlueSpeed);
 
-        // Debug.Log(GameData.getRedDir.ToString());
-        // Debug.Log(GameData.getBlueDir.ToString());
-
-        /********单机版******/
-        //Red_animator.SetFloat("Direction", GameData.RedDir, dirDemp, Time.deltaTime);//红熊方向
+        // 单机调试使用
+        //Red_animator.SetFloat("Direction", GameData.RedDir, _directionDamp, Time.deltaTime);
         //Red_animator.SetFloat("Speed", GameData.RedSpeed);
-        //Blue_animator.SetFloat("Direction", GameData.BlueDir, dirDemp, Time.deltaTime);//蓝熊方向
+        //Blue_animator.SetFloat("Direction", GameData.BlueDir, _directionDamp, Time.deltaTime);
         //Blue_animator.SetFloat("Speed", GameData.BlueSpeed);
-        /*******单机版*******/
-        if (Blue_stateinfo.IsName("Base Layer.Run") && GameData.getisBlueJump == 1)//蓝熊当前是跑步状态
+
+        // 当前是跑步状态且按下 Jump 按钮可跳跃
+        if (blueStateinfo.IsName("Base Layer.Run") && GameData.GetisBlueJump == 1)
         {
-            Blue_animator.SetTrigger("Jump");//跳
-            GameData.isBlueJump = 0;
+            _blueAnimator.SetTrigger("Jump"); // 跳
+            GameData.IsBlueJump = 0;
         }
-        if (Red_stateinfo.IsName("Base Layer.Run") && GameData.getisRedJump == 1)//蓝熊当前是跑步状态
+
+        if (redStateinfo.IsName("Base Layer.Run") && GameData.GetisRedJump == 1)
         {
-            Red_animator.SetTrigger("Jump");//跳
-            GameData.isRedJump = 0;
+            _redAnimator.SetTrigger("Jump"); // 跳
+            GameData.IsRedJump = 0;
         }
-        if (GameData.RedOrBlue == 1)//蓝熊
+
+        // 设置熊的位置和角度
+        if (GameData.RedOrBlue == 1)
         {
-            
-            RedBear.transform.localPosition = new Vector3(GameData.getRedX, GameData.getRedY, GameData.getRedZ);//设置两个熊的位置和角度
-            RedBear.transform.eulerAngles = new Vector3(GameData.getRedRotX, GameData.getRedRotY, GameData.getRedRotZ);
-        }else
-        if(GameData.RedOrBlue==0)
-        {
-            
-            BlueBear.transform.localPosition = new Vector3(GameData.getBlueX, GameData.getBlueY, GameData.getBlueZ);
-            BlueBear.transform.eulerAngles = new Vector3(GameData.getBlueRotX, GameData.getBlueRotY, GameData.getBlueRotZ);
+            RedBear.transform.localPosition =
+                new Vector3(GameData.GetRedX, GameData.GetRedY, GameData.GetRedZ);
+            RedBear.transform.eulerAngles = new Vector3(GameData.GetRedRotX, GameData.GetRedRotY, GameData.GetRedRotZ);
         }
-            
-	}
+        else if (GameData.RedOrBlue == 0)
+        {
+            BlueBear.transform.localPosition = new Vector3(GameData.GetBlueX, GameData.GetBlueY, GameData.GetBlueZ);
+            BlueBear.transform.eulerAngles = new Vector3(GameData.GetBlueRotX, GameData.GetBlueRotY,
+                GameData.GetBlueRotZ);
+        }
+    }
 }

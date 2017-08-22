@@ -1,35 +1,42 @@
 ﻿using UnityEngine;
-using System.Collections;
-using UnityEngine.Events;
-using UnityEngine.UI;
-public class UIScript : MonoBehaviour {
 
-	
-	// Update is called once per frame
-	void Update () {
+/// <summary>
+/// UI 控制脚本
+/// </summary>
+public class UIScript : MonoBehaviour
+{
+    private void Update()
+    {
         if (Input.GetKeyUp(KeyCode.Home) || Input.GetKeyUp(KeyCode.Escape))
-        {							//对手机“Home”键的监听
-            Application.Quit();										//游戏退出
+        {
+            // 退出游戏
+            Application.Quit(); 
         }
-	}
+    }
 
-    public void JumpClick()
+    /// <summary>
+    /// 跳跃
+    /// </summary>
+    public void Jump()
     {
         if (GameData.RedOrBlue == 0)
         {
-            GameData.isRedJump = 1;
+            GameData.IsRedJump = 1;
         }
         else if (GameData.RedOrBlue == 1)
         {
-            GameData.isBlueJump = 1;
+            GameData.IsBlueJump = 1;
         }
-        
-        Debug.Log("BBB");
+
+        Debug.Log("Jump!");
     }
+
+    /// <summary>
+    /// 退出游戏
+    /// </summary>
     public void Quit()
     {
         Application.Quit();
-        Debug.Log("AAA");
+        Debug.Log("Application Quit!");
     }
-
 }

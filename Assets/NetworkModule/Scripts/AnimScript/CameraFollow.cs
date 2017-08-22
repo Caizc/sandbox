@@ -1,49 +1,51 @@
 ﻿using UnityEngine;
-using System.Collections;
 
-public class CameraFollow : MonoBehaviour {
-    public GameObject RedBear;
+/// <summary>
+///     摄像机跟随脚本
+/// </summary>
+public class CameraFollow : MonoBehaviour
+{
     public GameObject BlueBear;
+    public GameObject RedBear;
 
-    private Transform target;
-    public float distance=10;
-    public float height=5;
-    public float heightDemp=2;
-    public float roationDemp=3;
-       
-	// Use this for initialization
-	void Start () {
+    public float Distance = 10;
+    public float Height = 5;
+    public float HeightDamp = 2;
+    public float RoationDamp = 3;
 
-	}
-	
-	// Update is called once per frame
-    void LateUpdate()
+    private Transform _target;
+
+    private void LateUpdate()
     {
         if (GameData.RedOrBlue == 0)
         {
-            target = RedBear.transform;
+            _target = RedBear.transform;
         }
-        if (GameData.RedOrBlue == 1)
+        else if (GameData.RedOrBlue == 1)
         {
-            target = BlueBear.transform;
+            _target = BlueBear.transform;
         }
-        if (target == null)
+
+        if (_target == null)
         {
             return;
         }
-        float wantedRoationAngle = target.eulerAngles.y;
-        float wantedHeight = target.position.y + height;
 
-        float currentRotationAngle = transform.eulerAngles.y;
-        float currentHeight = transform.position.y;
+        var wantedRoationAngle = _target.eulerAngles.y;
+        var wantedHeight = _target.position.y + Height;
 
-        currentRotationAngle = Mathf.LerpAngle(currentRotationAngle,wantedRoationAngle,roationDemp*Time.deltaTime);
-        currentHeight = Mathf.Lerp(currentHeight,wantedHeight,heightDemp*Time.deltaTime);
-        Quaternion currentRotation = Quaternion.Euler(0, currentRotationAngle, 0);
-        transform.position = target.position;
-        transform.position -= currentRotation * Vector3.forward * distance;
-        transform.position = new Vector3( transform.position.x,currentHeight,transform.position.z);
+        var currentRotationAngle = transform.eulerAngles.y;
+        var currentHeight = transform.position.y;
 
-        transform.LookAt(target);
-	}
+        currentRotationAngle = Mathf.LerpAngle(currentRotationAngle, wantedRoationAngle, RoationDamp * Time.deltaTime);
+        currentHeight = Mathf.Lerp(currentHeight, wantedHeight, HeightDamp * Time.deltaTime);
+
+        var currentRotation = Quaternion.Euler(0, currentRotationAngle, 0);
+
+        transform.position = _target.position;
+        transform.position -= currentRotation * Vector3.forward * Distance;
+        transform.position = new Vector3(transform.position.x, currentHeight, transform.position.z);
+
+        transform.LookAt(_target);
+    }
 }
