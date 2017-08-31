@@ -25,6 +25,8 @@ public class SendAnimMSG : MonoBehaviour
         if (_socket == null)
         {
             _socket = ConnectSocket.GetSocketInstance();
+
+            // 向服务端发送操控指令数据之前，先发送连接请求，获得服务端分配的单位（RedBear or BlueBear）
             byte[] bconnect = Encoding.ASCII.GetBytes("<#CONNECT#>");
             // 发送连接请求
             _socket.SendMessage(bconnect);

@@ -20,19 +20,27 @@ public class Injection
 }
 
 [LuaCallCSharp]
-public class LuaBehaviour : MonoBehaviour {
+public class LuaBehaviour : MonoBehaviour
+{
     public TextAsset luaScript;
     public Injection[] injections;
 
-    internal static LuaEnv luaEnv = new LuaEnv(); //all lua behaviour shared one luaenv only!
+    private static LuaEnv luaEnv = new LuaEnv(); //all lua behaviour shared one luaenv only!
     internal static float lastGCTime = 0;
-    internal const float GCInterval = 1;//1 second 
+    internal const float GCInterval = 1; //1 second 
 
     private Action luaStart;
     private Action luaUpdate;
     private Action luaOnDestroy;
 
     private LuaTable scriptEnv;
+
+    internal static LuaEnv LuaEnv
+    {
+        get { return luaEnv; }
+
+        set { luaEnv = value; }
+    }
 
     void Awake()
     {
@@ -49,7 +57,16 @@ public class LuaBehaviour : MonoBehaviour {
             scriptEnv.Set(injection.name, injection.value);
         }
 
-        luaEnv.DoString(luaScript.text, "LuaBehaviour", scriptEnv);
+        // Add third party library to LuaEnv
+        luaEnv.AddBuildin("rapidjson", XLua.LuaDLL.Lua.LoadRapidJson);
+        luaEnv.AddBuildin("lpeg", XLua.LuaDLL.Lua.LoadLpeg);
+        luaEnv.AddBuildin("pbc", XLua.LuaDLL.Lua.LoadProtobufC);
+
+        // xLua 例子中默认使用该重载来执行 lua 脚本
+        // luaEnv.DoString(luaScript.text, "LuaBehaviour", scriptEnv);
+
+        // TODO:实际测试发现必须使用以下重载才能在另一个 C# 类中获取到该 lua 脚本中某个函数的委托，否则返回的委托为空，具体原因未查明
+        luaEnv.DoString(luaScript.text);
 
         Action luaAwake = scriptEnv.Get<Action>("awake");
         scriptEnv.Get("start", out luaStart);
@@ -62,17 +79,15 @@ public class LuaBehaviour : MonoBehaviour {
         }
     }
 
-	// Use this for initialization
-	void Start ()
+    void Start()
     {
         if (luaStart != null)
         {
             luaStart();
         }
-	}
-	
-	// Update is called once per frame
-	void Update ()
+    }
+
+    void Update()
     {
         if (luaUpdate != null)
         {
@@ -83,7 +98,7 @@ public class LuaBehaviour : MonoBehaviour {
             luaEnv.Tick();
             LuaBehaviour.lastGCTime = Time.time;
         }
-	}
+    }
 
     void OnDestroy()
     {

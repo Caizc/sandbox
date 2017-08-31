@@ -13,25 +13,25 @@ using System;
 
 public static class GenCfg
 {
-    [LuaCallCSharp]
-    static List<Type> cfg = new List<Type>()
+    [LuaCallCSharp] static List<Type> cfg = new List<Type>()
     {
         typeof(TextAsset)
     };
 }
 
-public class XLuaHelloworld : MonoBehaviour {
-
-    void Start () {
+public class XLuaTestScript : MonoBehaviour
+{
+    void Start()
+    {
         LuaEnv luaenv = new LuaEnv();
         luaenv.AddBuildin("rapidjson", XLua.LuaDLL.Lua.LoadRapidJson);
         luaenv.AddBuildin("lpeg", XLua.LuaDLL.Lua.LoadLpeg);
         luaenv.AddBuildin("pbc", XLua.LuaDLL.Lua.LoadProtobufC);
         luaenv.DoString(@"require('testpbc')");
         luaenv.Dispose();
-	}
-	
-	void Update () {
-	
-	}
+    }
+
+    void Update()
+    {
+    }
 }

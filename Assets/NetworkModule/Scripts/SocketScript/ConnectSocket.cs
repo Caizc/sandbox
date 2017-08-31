@@ -2,12 +2,35 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using Assets.Demos.Sandbox;
 using UnityEngine;
 
 public class ConnectSocket
 {
     private static ConnectSocket _instance;
     private readonly Socket _socket;
+
+    // TODO: Socket Server IP&Port
+    // 办公室 MacBook IP 地址
+    private string _ip = "192.168.1.102";
+
+    private int _port = 2001;
+
+    // 办公室服务器 IP 地址
+//    private string _ip = "192.168.3.108";
+//    private int _port = 12345;
+
+    public string Ip
+    {
+        get { return _ip; }
+        set { _ip = value; }
+    }
+
+    public int Port
+    {
+        get { return _port; }
+        set { _port = value; }
+    }
 
     /// <summary>
     /// 构造方法
@@ -17,17 +40,7 @@ public class ConnectSocket
         // 实例化 Socket 对象
         _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
-        // TODO
-
-        // 办公室 MacBook IP 地址
-        var ip = IPAddress.Parse("192.168.1.100");
-        var port = 2001;
-
-        // 办公室服务器 IP 地址
-//         IPAddress ip = IPAddress.Parse("192.168.3.108");
-//         var port = 12345;
-
-        var ipe = new IPEndPoint(ip, port);
+        var ipe = new IPEndPoint(IPAddress.Parse(this._ip), this._port);
 
         var result = _socket.BeginConnect(ipe, ConnectCallBack, _socket);
 
@@ -70,7 +83,7 @@ public class ConnectSocket
     }
 
     /// <summary>
-    /// 接收服务端发来的消息
+    /// 接收服务端发来的消息（内容前带 4 个字节的消息长度）
     /// </summary>
     private void GetMessage()
     {
@@ -99,7 +112,11 @@ public class ConnectSocket
                     count += tempLength;
                 }
 
-                SplitBytes(bytes); // 拆字符串
+                // TODO: 拆分接收到的消息包
+                // SplitBytes(bytes); // 拆字符串
+
+                // 解码 protobuf 消息
+                DecodeProtobufMessage(bytes);
             }
             catch (Exception e)
             {
@@ -110,7 +127,7 @@ public class ConnectSocket
     }
 
     /// <summary>
-    /// 向服务端发送消息
+    /// 向服务端发送消息（发送内容之前先发送长度）
     /// </summary>
     /// <param name="bytes"></param>
     public void SendMessage(byte[] bytes)
@@ -136,6 +153,28 @@ public class ConnectSocket
     }
 
     /// <summary>
+    /// 向服务端发送消息（只发送内容，不发送长度）
+    /// </summary>
+    /// <param name="bytes"></param>
+    public void SendRawMessage(byte[] bytes)
+    {
+        if (!_socket.Connected) // 断开连接
+        {
+            Debug.Log("break connect");
+            _socket.Close();
+        }
+
+        try
+        {
+            _socket.Send(bytes, SocketFlags.None); // 发送消息内容
+        }
+        catch (Exception e)
+        {
+            Debug.Log(e.ToString());
+        }
+    }
+
+    /// <summary>
     /// 拆分消息包
     /// </summary>
     /// <param name="bytes">消息字节数组</param>
@@ -148,6 +187,8 @@ public class ConnectSocket
         {
             // 消息包为 4 个字节表示是分配玩家单位指令
             GameData.RedOrBlue = ByteUtils.ByteArray2Int(bytes, 0);
+
+            Debug.Log("i am " + (GameData.RedOrBlue == 0 ? "a Red Bear" : "a Blue Bear"));
         }
         else if (length == 72)
         {
@@ -191,5 +232,22 @@ public class ConnectSocket
             GameData.GetisRedJump = ByteUtils.ByteArray2Int(rjump, 0);
             GameData.GetisBlueJump = ByteUtils.ByteArray2Int(bjump, 0);
         }
+    }
+
+    /// <summary>
+    /// 解码 Protobuf 消息包
+    /// </summary>
+    /// <param name="bytes"></param>
+    private void DecodeProtobufMessage(byte[] bytes)
+    {
+        // 获取消息包大小
+        var length = bytes.Length;
+        Debug.Log("接收到的 Protobuf 消息包大小：" + length);
+
+        // 这里其实可以将 Decode 方法定义为 static，就不用每次都 new 一个新的 ProtobufDecoder 类
+        ProtobufDecoder pd = new ProtobufDecoder();
+
+        // 解码
+        pd.Decode(bytes);
     }
 }

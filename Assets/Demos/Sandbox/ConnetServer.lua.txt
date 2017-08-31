@@ -1,0 +1,143 @@
+﻿-- 与服务端互发 protobuf 消息测试脚本
+
+local protobuf = require 'protobuf'
+
+local service_id = 1
+local protocol_id = 2
+local sequence_id = 3
+
+function start()
+	print("lua start...")
+
+	local service = CS.Demos.Sandbox.ConnectServer
+
+	-- local isSuccess = service.SendMessage(service_id, protocol_id, sequence_id)
+	-- print("lua => SendMessage invoke succeed: ", isSuccess)
+
+	-- 获取编码后的 protobuf 协议消息
+	local encodeBytes = pbcTest()
+
+	-- 调用 C# 侧的 SendProtobufMessage 方法，向服务端发送测试的 protobuf 协议消息
+	local isSuccess = service.SendProtobufMessage(encodeBytes)
+
+	print("lua => SendMessage invoke succeed: ", isSuccess)
+end
+
+function pbcTest()
+	print("lua => Begin pbcTest...")
+
+	protobuf.register(CS.UnityEngine.Resources.Load('proto/AddressBook.pb').bytes)
+
+	local phoneNumber1 = { }
+	phoneNumber1.number = '139XXXXXXXX'
+	phoneNumber1.type = 'HOME'
+
+	local phoneNumber2 = { }
+	phoneNumber2.number = '189XXXXXXXX'
+	phoneNumber2.type = 'WORK'
+
+	local mapFieldEntry1 = { }
+	mapFieldEntry1.key = 'A'
+	mapFieldEntry1.value = phoneNumber1
+
+	local mapFieldEntry2 = { }
+	mapFieldEntry2.key = 'B'
+	mapFieldEntry2.value = phoneNumber2
+
+	local person = { }
+	person.name = 'Jason'
+	person.id = 7
+	person.email = 'jason@gmail.com'
+	person.married = true
+	person.partner = 'Katty'
+	person.phones = { phoneNumber1, phoneNumber2 }
+	person.pnmap = { mapFieldEntry1, mapFieldEntry2 }
+
+	-- 序列化
+	local encode2 = protobuf.encode('tutorial.Person', person)
+
+	-- 写二进制文件
+	-- writefile("./Assets/Demos/Resources/ab.bytes.txt", encode2)
+	-- 读二进制文件
+	-- local encode3 = readfile("./Assets/Demos/Resources/ab.bytes.txt")
+
+	-- 反序列化
+	local person_decode = protobuf.decode('tutorial.Person', encode2)
+
+	print('name: ', person_decode.name)
+	print('id: ', person_decode.id)
+	print('email: ', person_decode.email)
+	print('married: ', person_decode.married)
+	print('partner: ', person_decode.partner)
+
+	local nums = person_decode.phones
+	for i = 1, #nums do
+		print('PhoneNumber.number: ', nums[i].number)
+		print('PhoneNumber.type: ', nums[i].type)
+	end
+
+	-- 使用旧版本的语法可以模拟实现 protobuf v3 版本中的 Map 语法
+	local pnmap = person_decode.pnmap
+	print('pnmap: ', pnmap)
+	for i = 1, #pnmap do
+		print('MapEntry:', pnmap[i].key, pnmap[i].value.number, pnmap[i].value.type)
+	end
+
+	print("lua => End pbcTest...")
+
+	return encode2
+end
+
+function update()
+end
+
+function ondestroy()
+    print("lua destroy")
+end
+
+-- 读取二进制文件
+function readfile(filename)
+    local rfile = io.open(filename, "rb")
+    assert(rfile)
+    local info = rfile:read("*a")
+    rfile:close()
+    return info
+end
+
+-- 写入二进制文件
+function writefile(filename, info)
+    local wfile = io.open(filename, "wb")
+    assert(wfile)
+    wfile:write(info)
+    wfile:close()
+end
+
+-- 解码 protobuf 协议数据
+function decodeprotobuf(bytes)
+
+	-- 反序列化
+	local person_decode = protobuf.decode('tutorial.Person', bytes)
+
+	assert(person_decode)
+
+	print('name: ', person_decode.name)
+	print('id: ', person_decode.id)
+	print('email: ', person_decode.email)
+	print('married: ', person_decode.married)
+	print('partner: ', person_decode.partner)
+
+	local nums = person_decode.phones
+	for i = 1, #nums do
+		print('PhoneNumber.number: ', nums[i].number)
+		print('PhoneNumber.type: ', nums[i].type)
+	end
+
+	-- 使用旧版本的语法可以模拟实现 protobuf v3 版本中的 Map 语法
+	local pnmap = person_decode.pnmap
+	print('pnmap: ', pnmap)
+	for i = 1, #pnmap do
+		print('MapEntry:', pnmap[i].key, pnmap[i].value.number, pnmap[i].value.type)
+	end
+
+	return person_decode.id
+end
