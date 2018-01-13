@@ -21,22 +21,33 @@ public class Controller : MonoBehaviour
     public float IntervalTime;
 
     // 子弹总个数
-    public int TotalCount;
+    [Range(1, 50)] public int TotalCount;
 
     // 前进方向初速度
     public float ForwardSpeed;
 
-    // 振动方向初速度
-    public float ShakeSpeed;
+    // 振动方向初速度数组
+    public float[] ShakeSpeedArray;
 
-    // 振动周期（走完一个完整周期的时间）
-    public float ShakeFrequence;
+    // 振动周期数组（走完一个完整周期的时间）
+    public float[] ShakeFrequenceArray;
+
+    // 遍历振动方向初速度数组时，临时保存数组中最近访问的一个值
+    private float _tempShakeSpeed;
+
+    // 遍历振动周期数组时，临时保存数组中最近访问的一个值
+    private float _tempShakeFrequence;
 
     private GameObject _hero;
 
     void Start()
     {
         _hero = GameObject.FindWithTag("Player");
+
+        if (TotalCount < 1)
+        {
+            TotalCount = 1;
+        }
     }
 
     public void OnButtonClick()
@@ -48,7 +59,7 @@ public class Controller : MonoBehaviour
 
     private void Cast()
     {
-        // - 发射起点位置 position
+        // - 设置发射起点位置 position
         // - 计算每颗子弹转向 rotation
         // - 调用协程，传入子弹的初始位置 position 和转向 rotation，每隔 IntervalTime 时长创建一颗子弹
         // - 传入调整每颗子弹运行轨迹的其他参数
@@ -60,18 +71,41 @@ public class Controller : MonoBehaviour
         AttackDegree = Mathf.Clamp(AttackDegree, -360f, 360f);
 
         // 第一颗子弹发射角度
-        float firstBulletDegree = (180f - AttackDegree) / 2f;
+        float firstBulletDegree;
 
         // 相邻子弹间隔发射角度
         float perBulletDegree;
 
-        if (Mathf.Approximately(IntervalDegree, 0.0f))
+        // 判断攻击角度的形状（圆形 or 扇形）
+        if (Mathf.Approximately(Mathf.Abs(AttackDegree), 360f))
         {
-            perBulletDegree = AttackDegree / (TotalCount - 1);
+            // 圆形，则第一颗子弹的发射角度固定为正前方
+            firstBulletDegree = 90f;
+
+            // 如果 IntervalDegree 不为 0，启用另一种模式，详情参见该变量声明的注释
+            if (Mathf.Approximately(IntervalDegree, 0.0f))
+            {
+                perBulletDegree = AttackDegree / TotalCount;
+            }
+            else
+            {
+                perBulletDegree = IntervalDegree;
+            }
         }
         else
         {
-            perBulletDegree = IntervalDegree;
+            // 扇形，则第一颗子弹的发射角度在左边
+            firstBulletDegree = (180f - AttackDegree) / 2f;
+
+            // 如果 IntervalDegree 不为 0，启用另一种模式，详情参见该变量声明的注释
+            if (Mathf.Approximately(IntervalDegree, 0.0f))
+            {
+                perBulletDegree = AttackDegree / (TotalCount - 1);
+            }
+            else
+            {
+                perBulletDegree = IntervalDegree;
+            }
         }
 
         Vector3 position = heroPos;
@@ -88,16 +122,24 @@ public class Controller : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 生成一颗子弹（协程）
+    /// </summary>
     private IEnumerator SpawnBullet(int iCounter, Vector3 position, Quaternion rotation)
     {
         yield return new WaitForSeconds(IntervalTime * iCounter);
 
         GameObject bullet = Instantiate(BulletPrefab, position, rotation, BulletsParent.transform);
 
+        // 如振动方向初速度数组和振动周期数组的长度小于子弹总个数，则使用数组中最后一个值作为配置
+        _tempShakeSpeed = (ShakeSpeedArray.Length > iCounter ? ShakeSpeedArray[iCounter] : _tempShakeSpeed);
+        _tempShakeFrequence =
+            (ShakeFrequenceArray.Length > iCounter ? ShakeFrequenceArray[iCounter] : _tempShakeFrequence);
+
         // 设置每颗子弹的运行轨迹参数
         Moving moving = bullet.GetComponentInChildren<Moving>();
         moving.ForwardSpeed = ForwardSpeed;
-        moving.ShakeSpeed = ShakeSpeed;
-        moving.ShakeFrequence = ShakeFrequence;
+        moving.ShakeSpeed = _tempShakeSpeed;
+        moving.ShakeFrequence = _tempShakeFrequence;
     }
 }
